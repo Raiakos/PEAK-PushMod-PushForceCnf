@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 0.6.0
+- Recompiled checks to mitigate errors after the Mesa Update
+
 ## Version 0.5.0
 - Added Bing Bong Force Multiplier
    - Holding Bing Bong while pushing will push with 10x Force
