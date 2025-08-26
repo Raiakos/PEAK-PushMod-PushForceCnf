@@ -5,10 +5,10 @@ schemaVersion = "0.0.1"
 repository = "https://thunderstore.io"
 
 [package]
-namespace = "goldenstein64"
-name = "PushMod_MesaUpdate"
+namespace = "boxofbiscuits97"
+name = "PushMod"
 description = "Push your friends with the F key!"
-websiteUrl = "https://github.com/goldenstein64/PEAK-PushMod-MesaUpdate"
+websiteUrl = "https://github.com/Boxofbiscuits97/PEAK-PushMod"
 containsNsfwContent = false
 
 [package.dependencies]
@@ -20,7 +20,7 @@ readme = "../../README.md"
 outdir = "../../artifacts/thunderstore/"
 
 [[build.copy]]
-source = "../../artifacts/bin/PushMod_MesaUpdate/release/com.github.goldenstein64.PushMod_MesaUpdate.dll"
+source = "../../artifacts/bin/PushMod/release/com.github.boxofbiscuits97.PushMod.dll"
 target = "plugins/"
 
 [[build.copy]]
@@ -36,9 +36,9 @@ target = "/"
 [publish]
 # See communities at:
 # https://thunderstore.io/api/experimental/community/
-communities = [ "peak", ]
+communities = ["peak"]
 
 [publish.categories]
 # See categories at:
 # https://thunderstore.io/api/experimental/community/peak/category/
-peak = [ "mods", ]
+peak = ["mods"]
