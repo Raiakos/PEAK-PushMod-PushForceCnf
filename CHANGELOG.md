@@ -71,6 +71,12 @@ The following options can be customized in the BepInEx configuration file:
 - `ProtectionKey` — Key to toggle push protection (default: F11)
 - `CanCharge` — Enable or disable charge system (default: true)
 
+### Contributors
+
+- goldenstein64
+- AngelHeal
+- Cyber-Corvid
+
 ## Version 0.6.0
 
 - Recompiled checks to mitigate errors after the Mesa Update
