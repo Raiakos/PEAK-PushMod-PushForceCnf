@@ -15,12 +15,6 @@
 
   - You cannot push yourself by accident anymore. Instead, a dedicated self-push key, `G`, is provided.
 
-- Push protection mode
-
-  - Toggleable protection against incoming pushes from other players.
-  - Pressing `F11` toggles immunity on/off.
-  - Status is visually indicated on-screen (top-right corner).
-
 - Configuration system
 
   - The following options can be customized in the BepInEx configuration file:

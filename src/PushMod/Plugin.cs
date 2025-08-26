@@ -47,7 +47,6 @@ public class PushManager : MonoBehaviour {
     // ==========================================================================================================
 
     // ====================================== Debug & UI ========================================================
-    private bool showProtectionUI = true;                       // Toggle display of protection status UI
     private bool showChargeBar = true;                          // Toggle display of charge progress bar
     private Color chargeBarColor = Color.cyan;                  // Color of the charge bar
 
@@ -59,7 +58,6 @@ public class PushManager : MonoBehaviour {
     private float animationCoolDown;                            // Duration of active push animation
 
     private bool bingBong;                                      // True if player is holding the "BingBong" item
-    private bool protectionPush;                                // If enabled, blocks incoming push forces
 
     // Charging system
     private bool isCharging;                                    // Whether the player is currently charging a push
@@ -93,13 +91,6 @@ public class PushManager : MonoBehaviour {
     }
 
     private void Update() {
-
-        // Toggle protection mode when the assigned key is pressed
-        if (Input.GetKeyDown(Plugin.PConfig.ProtectionKey)) {
-            protectionPush = !protectionPush;
-            Plugin.Log.LogError($"Protection mode: {protectionPush}");
-        }
-
         // Update cooldown timers
         if (coolDownLeft > 0f) coolDownLeft -= Time.deltaTime;
         if (animationCoolDown > 0f) animationCoolDown -= Time.deltaTime;
@@ -192,7 +183,7 @@ public class PushManager : MonoBehaviour {
         // Trigger jump SFX on the target (temporary feedback)
         if (!self) {
             PlayPushSFX(pushedCharacter);
-        }  
+        }
 
         // Apply cooldown and stamina cost
         coolDownLeft = PUSH_COOLDOWN;
@@ -226,19 +217,6 @@ public class PushManager : MonoBehaviour {
     /// - Charge progress bar (when charging)
     /// </summary>
     private void OnGUI() {
-        // === UI: Protection Status ===
-        if (showProtectionUI && protectionPush) {
-            GUIStyle style = new GUIStyle() {
-                fontSize = 20,
-                normal = { textColor = Color.yellow },
-                fontStyle = FontStyle.Bold
-            };
-
-            string text = "Protection is enabled";
-            Vector2 textSize = style.CalcSize(new GUIContent(text));
-            GUI.Label(new Rect(Screen.width - textSize.x - 10, 10, textSize.x, textSize.y), text, style);
-        }
-
         // === UI: Charge Bar ===
         if (showChargeBar && isCharging) {
             // Initialize blank texture if not already created
@@ -339,11 +317,6 @@ public class PushManager : MonoBehaviour {
         }
         else {
             Plugin.Log.LogWarning($"Could not find character with photon ID: {senderID}");
-        }
-        // Block push if protection mode is active
-        if (protectionPush) {
-            Plugin.Log.LogInfo("Push blocked by protection mode.");
-            return;
         }
 
         // Ensure local character is identified
