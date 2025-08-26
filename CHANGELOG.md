@@ -39,8 +39,8 @@
 
 ### Contributors
 
-- goldenstein64
 - AngelHeal
+- goldenstein64
 - Cyber-Corvid
 
 ## Version 0.6.0
