@@ -20,7 +20,6 @@
   - The following options can be customized in the BepInEx configuration file:
     - `PushKey` — Key to perform a regular push (default: `F`)
     - `SelfPushKey` — Key to push yourself (default: `G`)
-    - `ProtectionKey` — Key to toggle push protection (default: `F11`)
     - `CanCharge` — Enable or disable charge system (default: true)
 
 ### Fixed
