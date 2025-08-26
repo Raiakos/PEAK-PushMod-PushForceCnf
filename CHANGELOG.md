@@ -2,74 +2,40 @@
 
 ## Unreleased
 
-### Charge System
+### Added
 
-- Added **chargeable push** by holding down the push key.
-- Longer charge = stronger push (up to a configurable maximum multiplier: x1.5).
-- Visual charge indicator displayed as a progress bar at the bottom of the screen.
-- Charge builds while holding the push key and is applied upon release.
+- Charge system
 
-### Self-Push
+  - Charge builds while holding the push key and is applied upon release.
+  - Longer charge = stronger push (up to x1.5 at full charge).
+  - Stamina cost dynamically scales with charge (up to x3 at full charge).
+  - Visual charge indicator displayed as a progress bar at the bottom of the screen.
 
-- Added a dedicated key to **push yourself**.
-- Enables mobility control and environmental interactions.
+- Self-push
 
-### Push Protection Mode
+  - You cannot push yourself by accident anymore. Instead, a dedicated self-push key, `G`, is provided.
 
-- Toggleable protection against incoming pushes from other players.
-- Pressing the protection key toggles immunity on/off.
-- Status is visually indicated on-screen (top-right corner).
+- Push protection mode
 
-### Enhanced Configuration System
+  - Toggleable protection against incoming pushes from other players.
+  - Pressing `F11` toggles immunity on/off.
+  - Status is visually indicated on-screen (top-right corner).
 
-- Replaced `Config.Bind` with a centralized `ConfigurationHandler`.
-- All key parameters are now defined as constants for easy balancing:
-  - Push range (default: 2.5m)
-  - Cooldown (default: 1s)
-  - Stamina cost scaling (with charge)
-  - UI colors and visual settings
+- Configuration system
 
-### Improved UI & Visual Feedback
+  - The following options can be customized in the BepInEx configuration file:
+    - `PushKey` — Key to perform a regular push (default: `F`)
+    - `SelfPushKey` — Key to push yourself (default: `G`)
+    - `ProtectionKey` — Key to toggle push protection (default: `F11`)
+    - `CanCharge` — Enable or disable charge system (default: true)
 
-- **Charge bar** appears during button hold — smooth progress visualization via `Texture2D`.
-- **Protection status indicator** shows "ON/OFF" in yellow text at top-right.
-- Both UI elements are clean, non-intrusive, and customizable.
+### Fixed
 
-### Performance & Stability Optimizations
+- Pushing others uses a raycast filter that whitelists characters, bypassing held items like Bing Bong.
 
-- Cached critical components (`Character`, `Camera.main`) in `Awake()` — eliminates per-frame `GetComponent` calls.
-- Null checks during initialization prevent crashes.
-- Component automatically disables itself on critical errors.
-- Safe `GetCharacter()` recursion with proper null handling.
-- Fixed potential issues when `mainCamera` or `Character` is missing.
+- Push animation and sound effect now plays on the sender, not just the target.
 
-### Refined Push Logic
-
-- Final push strength now scales with:
-  - Presence of the "BingBong" item (x10 multiplier)
-  - Charge level (up to x1.5)
-- Stamina cost dynamically scales with charge (up to x3 at full charge).
-- Raycast now uses a dedicated `LayerMask` filtering only the "Character" layer — improves accuracy and performance.
-
-### RPC & Animation Improvements
-
-- Push animation now plays on the **sender** (not just the target).
-- Push sound effect plays locally for both the attacker and the target.
-- Better feedback and synchronization across network.
-
-### Partial Localization Support
-
-- "BingBong" item detection now uses `ItemTags.BingBong` instead of string comparison.
-- Ensures compatibility across language changes and prevents name-based bugs.
-
-### Configurable Settings (via PEAK/BepInEx/config/com.github.boxofbiscuits97.PushMod.cfg)
-
-The following options can be customized in the BepInEx configuration file:
-
-- `PushKey` — Key to perform a regular push (default: F)
-- `SelfPushKey` — Key to push yourself (default: G)
-- `ProtectionKey` — Key to toggle push protection (default: F11)
-- `CanCharge` — Enable or disable charge system (default: true)
+- Bing Bong item detection now uses item tags, avoiding compatibility issues when playing in other languages.
 
 ### Contributors
 
