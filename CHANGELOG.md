@@ -9,11 +9,12 @@
   - Charge builds while holding the push key and is applied upon release.
   - Longer charge = stronger push (up to x1.5 at full charge).
   - Stamina cost dynamically scales with charge (up to x3 at full charge).
-  - Visual charge indicator displayed as a progress bar at the bottom of the screen.
+  - Visual charge indicator displayed as a progress bar at the side of the screen.
 
 - Self-push
 
   - You cannot push yourself by accident anymore. Instead, a dedicated self-push key, `G`, is provided.
+    - You can do some really funny item throws such as a BingBong orbital cannon by pushing yourself, try it out!
 
 - Configuration system
 
