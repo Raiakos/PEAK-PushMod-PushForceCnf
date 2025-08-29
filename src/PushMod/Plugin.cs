@@ -30,6 +30,24 @@ public static class PushPatch {
         __instance.gameObject.AddComponent<PushManager>();
         Plugin.Log.LogInfo($"Added PushManager component to character: {__instance.characterName}");
     }
+
+
+    /// <summary>
+    /// Prefix patch on GUIManager.UpdateReticle to change the reticle whilst pushing.
+    /// </summary>
+    [HarmonyPrefix, HarmonyPatch(typeof(GUIManager), nameof(GUIManager.UpdateReticle))]
+    public static bool ReticlePatch(GUIManager __instance) {
+        PushManager pushManager = (PushManager)Character.localCharacter.GetComponent(typeof(PushManager));
+        if (pushManager is null) return true;
+
+        if (pushManager.animationCoolDown > 0f) {
+            __instance.reticleDefaultImage.color = (__instance.character.data.sinceCanClimb < 0.05f) ? __instance.reticleColorHighlight : __instance.reticleColorDefault;
+            __instance.SetReticle(__instance.reticleReach);
+            return false;
+        }
+
+        return true;
+    }
 }
 
 public class PushManager : MonoBehaviour {
@@ -47,15 +65,16 @@ public class PushManager : MonoBehaviour {
     // ==========================================================================================================
 
     // ====================================== Debug & UI ========================================================
-    private bool showChargeBar = true;                          // Toggle display of charge progress bar
-    private Color chargeBarColor = Color.cyan;                  // Color of the charge bar
+    private bool showChargeBar = true;                                             // Toggle display of charge progress bar
+    private Color chargeBarColor = new Color(0.3483f, 0.7843f, 0f);                // Color of the charge bar
+    private Color chargeBackgroundColor = new Color(0.1035f, 0.2656f, 0.3019f);    // Color of the background of the charge bar
 
     private static Texture2D? blankTexture;
 
     private Character localCharacter = null!;
     private Character? pushedCharacter;
     private float coolDownLeft;                                 // Remaining cooldown time before next push
-    private float animationCoolDown;                            // Duration of active push animation
+    public float animationCoolDown;                             // Duration of active push animation
 
     private bool bingBong;                                      // True if player is holding the "BingBong" item
 
@@ -231,19 +250,27 @@ public class PushManager : MonoBehaviour {
             float x = (Screen.width - barWidth) / 2f;
             float y = Screen.height * 0.8f;
 
-            // Draw background (gray)
-            GUI.DrawTexture(new Rect(x, y, barWidth, barHeight), blankTexture, ScaleMode.StretchToFill, false, 0, Color.grey, 0, 0);
+            // Draw background
+            GUI.DrawTexture(new Rect(x, y, barWidth, barHeight), blankTexture, ScaleMode.StretchToFill, false, 0, chargeBackgroundColor, 0, 0);
 
-            // Draw progress (colored)
+            // Draw progress
             GUI.DrawTexture(new Rect(x, y, barWidth * progress, barHeight), blankTexture, ScaleMode.StretchToFill, false, 0, chargeBarColor, 0, 0);
 
             // Draw charge label above the bar
             GUIStyle textStyle = new GUIStyle(GUI.skin.label) {
                 fontSize = 16,
                 alignment = TextAnchor.MiddleCenter,
-                normal = { textColor = Color.black }
+                normal = { textColor = chargeBackgroundColor }
             };
-            GUI.Label(new Rect(x, y, barWidth, 20), $"Push Charge: {(progress * 100):F0}%", textStyle);
+
+            string chargeText = $"Push Charge: {(progress * 100):F0}%";
+
+            // Draw drop shadow text
+            GUI.Label(new Rect(x + 1, y + 1, barWidth, 20), chargeText, textStyle);
+
+            // Draw actual charge text
+            textStyle.normal.textColor = Color.white;
+            GUI.Label(new Rect(x, y, barWidth, 20), chargeText, textStyle);
         }
     }
 
