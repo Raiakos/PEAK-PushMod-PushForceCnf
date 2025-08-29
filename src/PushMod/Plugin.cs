@@ -4,6 +4,7 @@ using HarmonyLib;
 using Photon.Pun;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace PushMod;
 
@@ -41,8 +42,13 @@ public static class PushPatch {
         if (pushManager is null) return true;
 
         if (pushManager.animationCoolDown > 0f) {
-            __instance.reticleDefaultImage.color = (__instance.character.data.sinceCanClimb < 0.05f) ? __instance.reticleColorHighlight : __instance.reticleColorDefault;
             __instance.SetReticle(__instance.reticleReach);
+            return false;
+        }
+
+        // Show reticle when raycast hits other player
+        if (pushManager.isCharging && !pushManager.isPushingSelf && pushManager.hitCharacter != null && pushManager.hitCharacter != Character.localCharacter) {
+            __instance.SetReticle(__instance.reticleShoot);
             return false;
         }
 
@@ -65,22 +71,25 @@ public class PushManager : MonoBehaviour {
     // ==========================================================================================================
 
     // ====================================== Debug & UI ========================================================
-    private bool showChargeBar = true;                                             // Toggle display of charge progress bar
-    private Color chargeBarColor = new Color(0.3483f, 0.7843f, 0f);                // Color of the charge bar
-    private Color chargeBackgroundColor = new Color(0.1035f, 0.2656f, 0.3019f);    // Color of the background of the charge bar
-
-    private static Texture2D? blankTexture;
+    private Color chargeBarMinColor = new Color(0.3483f, 0.7843f, 0f);             // Color of the charge bar at min charge
+    private Color chargeBarMaxColor = new Color(0.749f, 0.9255f, 0.1098f);         // Color of the charge bar at max charge
 
     private Character localCharacter = null!;
     private Character? pushedCharacter;
+    public Character? hitCharacter;
+    
     private float coolDownLeft;                                 // Remaining cooldown time before next push
     public float animationCoolDown;                             // Duration of active push animation
 
     private bool bingBong;                                      // True if player is holding the "BingBong" item
 
     // Charging system
-    private bool isCharging;                                    // Whether the player is currently charging a push
-    private float currentCharge;                                // Current charge level (0 to MAX_CHARGE)
+    public bool isCharging;                                    // Whether the player is currently charging a push
+    public bool isPushingSelf;                                 // Whether the player is currently trying to push themselves
+    public float currentCharge;                                // Current charge level (0 to MAX_CHARGE)
+
+    private GameObject? chargeBarObject;
+    private Image? chargeBar;
 
     // ====================== Cached components for performance optimization ====================================
     private Character cachedCharacter = null!;
@@ -122,21 +131,52 @@ public class PushManager : MonoBehaviour {
         if (coolDownLeft > 0f) return;
         if (localCharacter is null) return;
         if (!localCharacter.view.IsMine) return;
-        if (!localCharacter.data.fullyConscious) return;
-        if (localCharacter.data.isCarried) return;
-        if (localCharacter.data.isClimbing) return;
+
+        if (!localCharacter.data.fullyConscious || localCharacter.data.isCarried || localCharacter.data.isClimbingAnything) {
+            if (chargeBarObject) chargeBarObject.SetActive(false);
+            return;
+        }
 
         // Check if the current held item is "BingBong"
-        Item? currentItem = localCharacter.data.currentItem;
+            Item? currentItem = localCharacter.data.currentItem;
         bingBong = currentItem is not null && currentItem.itemTags is Item.ItemTags.BingBong; // Multi-language support 🤡
 
         // Handle input for charge-based pushing
         HandleChargeInput();
 
+        // Create Charge bar UI element
+        if (chargeBar is null || chargeBarObject is null) {
+            GameObject throwUIObject = GameObject.Find("GAME/GUIManager/Canvas_HUD/Throw/");
+            chargeBarObject = Instantiate(throwUIObject);
+            chargeBarObject.name = "PushCharge";
+            chargeBarObject.transform.parent = throwUIObject.transform.parent;
+            chargeBarObject.transform.localPosition = Vector3.zero;
+            chargeBarObject.transform.rotation = Quaternion.Euler(new Vector3(0f, 0f, 180f));
+
+            GameObject barFillGameObject = chargeBarObject.transform.Find("BarMask/BarFill/").gameObject;
+            barFillGameObject.transform.localScale = new Vector3(1f, -1f, 1f);
+            chargeBar = barFillGameObject.GetComponent<Image>();
+        }
+
+        chargeBarObject.SetActive(isCharging);
+
         // Charging is active — we update the visualization
         if (isCharging) {
             currentCharge += Time.deltaTime;
             currentCharge = Mathf.Clamp(currentCharge, 0f, MAX_CHARGE);
+
+            float fillAmount = Mathf.Lerp(0.672f, 0.808f, currentCharge);
+            Color fillColor = Color.Lerp(chargeBarMinColor, chargeBarMaxColor, currentCharge);
+            chargeBar.fillAmount = fillAmount;
+            chargeBar.color = fillColor;
+
+            // Perform raycast from camera forward within push range
+            if (Physics.Raycast(mainCamera.transform.position, mainCamera.transform.forward, out RaycastHit hitInfo, PUSH_RANGE, LayerMask.GetMask("Character"))) {
+                // Retrieve the Character component from the hit object
+                hitCharacter = GetCharacter(hitInfo.transform.gameObject);
+            }
+            else hitCharacter = null;
+            
         }
     }
 
@@ -146,17 +186,19 @@ public class PushManager : MonoBehaviour {
     /// </summary>
     private void HandleChargeInput() {
         if (Plugin.PConfig.CanCharge) {
-            if ((Input.GetKeyDown(Plugin.PConfig.PushKey) || Input.GetKeyDown(Plugin.PConfig.SelfPushKey)) && !isCharging && coolDownLeft <= 0f) {
+            if ((Input.GetKey(Plugin.PConfig.PushKey) || Input.GetKey(Plugin.PConfig.SelfPushKey)) && !isCharging && coolDownLeft <= 0f) {
                 isCharging = true;
                 currentCharge = 0f;
                 Plugin.Log.LogInfo("Started charging push...");
             }
             if (Input.GetKeyUp(Plugin.PConfig.PushKey) && !Input.GetKey(Plugin.PConfig.SelfPushKey) && isCharging) {
                 isCharging = false;
+                isPushingSelf = false;
                 TryPushTarget(false);
             }
             if (Input.GetKeyUp(Plugin.PConfig.SelfPushKey) && !Input.GetKey(Plugin.PConfig.PushKey) && isCharging) {
                 isCharging = false;
+                isPushingSelf = true;
                 TryPushTarget(true);
             }
         }
@@ -182,12 +224,7 @@ public class PushManager : MonoBehaviour {
             pushedCharacter = localCharacter;
         }
         else {
-            // Perform raycast from camera forward within push range
-            if (!Physics.Raycast(mainCamera.transform.position, mainCamera.transform.forward, out RaycastHit hitInfo, PUSH_RANGE, LayerMask.GetMask("Character")))
-                return;
-
-            // Retrieve the Character component from the hit object
-            pushedCharacter = GetCharacter(hitInfo.transform.gameObject);
+            pushedCharacter = hitCharacter;
             if (pushedCharacter == null || pushedCharacter == localCharacter) return;
         }
 
@@ -212,67 +249,6 @@ public class PushManager : MonoBehaviour {
         // Send RPC to all clients to synchronize the push
         Plugin.Log.LogInfo("Sending Push RPC Event");
         localCharacter.view.RPC("PushPlayer_Rpc", RpcTarget.All, pushedCharacter.view.ViewID, forceDirection, localCharacter.view.ViewID);
-    }
-
-    /// <summary>
-    /// Creates a solid-colored texture for UI drawing.
-    /// Used for drawing colored bars in OnGUI.
-    /// </summary>
-    /// <param name="width">Width of the texture</param>
-    /// <param name="height">Height of the texture</param>
-    /// <param name="color">Color to fill the texture with</param>
-    /// <returns>A fully colored Texture2D</returns>
-    private Texture2D MakeTex(int width, int height, Color color) {
-        Color[] pixels = new Color[width * height];
-        for (int i = 0; i < pixels.Length; ++i) pixels[i] = color;
-        Texture2D result = new Texture2D(width, height);
-        result.SetPixels(pixels);
-        result.Apply();
-        return result;
-    }
-
-    /// <summary>
-    /// Displays UI elements:
-    /// - Protection status indicator (when enabled)
-    /// - Charge progress bar (when charging)
-    /// </summary>
-    private void OnGUI() {
-        // === UI: Charge Bar ===
-        if (showChargeBar && isCharging) {
-            // Initialize blank texture if not already created
-            if (blankTexture is null) {
-                blankTexture = MakeTex(1, 1, Color.white);
-            }
-
-            float barWidth = 200f;
-            float barHeight = 20f;
-            float progress = currentCharge / MAX_CHARGE;
-
-            float x = (Screen.width - barWidth) / 2f;
-            float y = Screen.height * 0.8f;
-
-            // Draw background
-            GUI.DrawTexture(new Rect(x, y, barWidth, barHeight), blankTexture, ScaleMode.StretchToFill, false, 0, chargeBackgroundColor, 0, 0);
-
-            // Draw progress
-            GUI.DrawTexture(new Rect(x, y, barWidth * progress, barHeight), blankTexture, ScaleMode.StretchToFill, false, 0, chargeBarColor, 0, 0);
-
-            // Draw charge label above the bar
-            GUIStyle textStyle = new GUIStyle(GUI.skin.label) {
-                fontSize = 16,
-                alignment = TextAnchor.MiddleCenter,
-                normal = { textColor = chargeBackgroundColor }
-            };
-
-            string chargeText = $"Push Charge: {(progress * 100):F0}%";
-
-            // Draw drop shadow text
-            GUI.Label(new Rect(x + 1, y + 1, barWidth, 20), chargeText, textStyle);
-
-            // Draw actual charge text
-            textStyle.normal.textColor = Color.white;
-            GUI.Label(new Rect(x, y, barWidth, 20), chargeText, textStyle);
-        }
     }
 
     /// <summary>
