@@ -277,10 +277,7 @@ public class PushManager : MonoBehaviour {
     /// <param name="character">The character to animate</param>
     private void PlayPushAnimation(Character? character) {
         if (character is null) return;
-        CharacterAnimations? charAnims = character.GetComponent<CharacterAnimations>();
-        if (charAnims is null) return;
-        Animator? animator = charAnims.character.refs.animator;
-        animator?.Play("A_Scout_Reach_Straight");
+        character.refs.animator.Play("A_Scout_Reach_Straight");
     }
 
     /// <summary>
