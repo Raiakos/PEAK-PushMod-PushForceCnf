@@ -17,7 +17,7 @@ public class ConfigurationHandler {
     public KeyCode SelfPushKey => _configSelfPushKey.Value;
     public KeyCode PushKey => _configPushKey.Value;
     public bool CanCharge => _configcanCharge.Value;
-    public float PushForce => _configPushForce;
+    public float PushForce => _configPushForce.Value;
 
     public ConfigurationHandler(Plugin instance) {
         Plugin.Log.LogInfo("PushMod ConfigurationHandler initialising");
